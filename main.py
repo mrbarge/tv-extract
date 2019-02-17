@@ -170,7 +170,7 @@ def build_art_dict(albums, art):
     return data
 
 
-def build_header(title, tags, category, summary, authors='Simon Tesla', toc_run='false'):
+def build_header(title, tags, category, summary, authors='', toc_run='false'):
     # hard coding html like its 1999!
     return f'''
 <html>
