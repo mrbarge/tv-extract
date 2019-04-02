@@ -170,6 +170,12 @@ def build_art_dict(albums, art):
     return data
 
 
+def build_album_path(albums, album_id):
+    parent_albums = album_parent_hierachy(albums, album_id)
+    albumpath = '/'.join([f'{a.filename}-{a.id}' for a in parent_albums])
+    return albumpath
+
+
 def build_header(title, tags, category, summary, authors='', toc_run='false'):
     # hard coding html like its 1999!
     return f'''
@@ -204,6 +210,7 @@ def build_site(albums, art, html_dir='.', art_dir='albums', thumbs_dir='thumbs')
 
 
 def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_dir='thumbs', breadcrumbs=[]):
+    parent_albums = album_parent_hierachy(albums, album.id)[:-1]
     child_albums = album_children(album.id, albums)
     # sort them alphabetically, make it nice!
     child_albums.sort(key=lambda x: x.title)
@@ -214,7 +221,13 @@ def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_
     if not album.filename:
         html_file = os.path.join(html_dir, 'index.html')
     else:
-        html_file = os.path.join(html_dir, f'{album.filename}.html')
+        albumpath = build_album_path(albums, album.id)
+        albumdir = os.path.join(html_dir, albumpath)
+        try:
+            os.makedirs(albumdir)
+        except FileExistsError:
+            pass
+        html_file = os.path.join(albumdir, f'index.html')
 
     with open(html_file, mode='w', encoding='utf8') as f:
         hdr = build_header(tags='artwork, album', category='art', summary=f'Album artwork: {album.title}',
@@ -222,16 +235,22 @@ def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_
         ftr = build_footer()
         print(hdr, file=f)
 
-        breadcrumb_link = '<p>Go Back:'
-        for b in breadcrumbs:
-            breadcrumb_link += f' / <a href="{b[0]}">{b[1]}</a>'
+        breadcrumb_link = '<p>Go Back: '
+        home_back = '../' * (len(parent_albums)+1)
+        breadcrumb_link += f'<a href="{home_back}index.html">Home</a> '
+        for i in range(0,len(parent_albums)):
+            j = len(parent_albums) - i
+            breadcrumb_back = '../' * j
+            breadcrumb_link += f' / <a href="{breadcrumb_back}index.html">{parent_albums[i].title}</a>'
+        # for b in breadcrumbs:
+        #     breadcrumb_link += f' / <a href="">{b[1]}</a>'
         breadcrumb_link += '</p>'
         print(breadcrumb_link, file=f)
 
         print('<h3>Sub-folders</h3>', file=f)
         print('<ul>', file=f)
         for c in child_albums:
-            print(f'<li><a href="{c.filename}.html">{c.title}</a></li>', file=f)
+            print(f'<li><a href="{c.filename}-{c.id}/index.html">{c.title}</a></li>', file=f)
         print('</ul>', file=f)
 
         print('<h3>Artwork</h3>', file=f)
@@ -246,8 +265,10 @@ def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_
             print(f'<td>', file=f)
             print(f'<b>Title</b>: {item.title}<br/>', file=f)
             print(f'<b>Submitter</b>: {item.user_name}<br/>', file=f)
-            print(f'<b>Summary</b>: {item.summary}<br/>', file=f)
-            print(f'<b>Description</b>: {item.description}<br/>', file=f)
+            if item.summary and item.summary is not 'None':
+                print(f'<b>Summary</b>: {item.summary}<br/>', file=f)
+            if item.description and item.description is not 'None':
+                print(f'<b>Description</b>: {item.description}<br/>', file=f)
             print(f'</td>', file=f)
             print(f'</tr>', file=f)
 
@@ -255,8 +276,7 @@ def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_
         print(ftr, file=f)
 
     for c in child_albums:
-        build_album_page(albums, art, c, html_dir, art_dir, thumbs_dir,
-                         breadcrumbs=breadcrumbs + [(html_file, album.title)])
+        build_album_page(albums, art, c, html_dir, art_dir, thumbs_dir)
 
 
 def main():
