@@ -257,8 +257,8 @@ def build_album_page(albums, art, album, html_dir='.', art_dir='albums', thumbs_
         print('<table border=0>', file=f)
         for item in album_art:
             item_albums = album_parent_hierachy(albums, item.parent_id)
-            art_path = '/'.join([art_dir] + [album.filename for album in item_albums] + [item.filename])
-            thumb_path = '/'.join([thumbs_dir] + [album.filename for album in item_albums] + [item.filename])
+            art_path = home_back + '/'.join([art_dir] + [album.filename for album in item_albums] + [item.filename])
+            thumb_path = home_back + '/'.join([thumbs_dir] + [album.filename for album in item_albums] + [item.filename])
 
             print('<tr>', file=f)
             print(f'<td><a href="{art_path}"><img src="{thumb_path}" /></a></td>', file=f)
